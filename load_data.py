@@ -1,8 +1,9 @@
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-import torch.nn as nn
 from PIL import Image
 from load_data_utils import nyu2_paired_path
+import torch.nn as nn
+import random
 
 class nyu2_dataset(Dataset):
     
@@ -34,7 +35,7 @@ class nyu2_dataset(Dataset):
     def __len__(self):
         return len(self.path_pairs)
     
-def nyu2_dataloaders(batchsize=64, nyu2path='./nyu2_train'):
+def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
     
     '''
     split and return training set, validation set and testing test
@@ -46,6 +47,9 @@ def nyu2_dataloaders(batchsize=64, nyu2path='./nyu2_train'):
         nyu2path (str) : the path of nyu2_train dataset
     '''
     
+    print("Entering nyu2_dataloaders()")
+    print("---------------- Loading Dataloaders ----------------")
+    
     # used for trainingset and validation set
     train_val_transforms = nn.Sequential(
         # output is a (224, 224, 3) tensor
@@ -55,7 +59,7 @@ def nyu2_dataloaders(batchsize=64, nyu2path='./nyu2_train'):
         transforms.RandomCrop(size=[224, 224]),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406],
-                  [0.229, 0.224, 0.225])
+                             [0.229, 0.224, 0.225])
     )
     
     # used for testing set
@@ -63,21 +67,34 @@ def nyu2_dataloaders(batchsize=64, nyu2path='./nyu2_train'):
         transforms.Scale(size=[224, 224]),
         transforms.ToTensor(is_test=True),
         transforms.Normalize([0.485, 0.456, 0.406],
-                  [0.229, 0.224, 0.225])
+                             [0.229, 0.224, 0.225])
     )
     
-    all_pairs = nyu2_paired_path(nyu2_path=nyu2path)
+    # preparing the pathpairs for different parts of data
+    all_pairs = nyu2_paired_path(nyu2_path=nyu2_path)
     
     # train: val: test = 7: 2: 1
     total_size = len(all_pairs)
     train_size = int(total_size * 0.7)
     ttl_sz_left = total_size - train_size
     val_size = int(total_size * 0.2)
-    test_size = ttl_sz_left - val_size
     
-    # TODO: split the dataset to three, better shuffle them
-    # train_dataset, val_dataset, test_dataset = 
-    # random_split()
+    # shuffle the list and assign them to datasets
+    random.shuffle(all_pairs)
+    
+    train_pair = all_pairs[: train_size]
+    val_pair = all_pairs[train_size: train_size + val_size]
+    test_pair = all_pairs[train_size + val_size: ]
+    
+    # from pairs -> to datasets
+    train_dataset = nyu2_dataset(pairs=train_pair,
+                                 _transforms=train_val_transforms)
+    val_dataset   = nyu2_dataset(pairs=val_pair,
+                                 _transforms=train_val_transforms)
+    test_dataset  = nyu2_dataset(pairs=test_pair,
+                                 _transforms=test_transforms)
+    
+    print("-------- Datasets are ready, preparing Dataloaders --------")
     
     # datalodaers, to be enumerated
     train_loader  = DataLoader (dataset=train_dataset,
@@ -86,5 +103,8 @@ def nyu2_dataloaders(batchsize=64, nyu2path='./nyu2_train'):
                                 batch_size=batchsize)
     test_loader   = DataLoader (dataset=test_dataset,
                                 batch_size=batchsize)
+    
+    print("----------------- DataLoaders Ready ----------------")
+    print("Exit nyu2_dataloaders()")
     
     return (train_loader, val_loader, test_loader)
