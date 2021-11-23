@@ -53,10 +53,10 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
     # used for trainingset and validation set
     train_val_transforms = nn.Sequential(
         # output is a (224, 224, 3) tensor
-        transforms.Scale(size=[224, 224]),
+        transforms.Scale(size=[320, 240]),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(5),
-        transforms.RandomCrop(size=[224, 224]),
+        transforms.RandomCrop([304, 228]),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406],
                              [0.229, 0.224, 0.225])
@@ -64,7 +64,8 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
     
     # used for testing set
     test_transforms = nn.Sequential(
-        transforms.Scale(size=[224, 224]),
+        transforms.Scale(size=[320, 240]),
+        transforms.RandomCrop([304, 228]),
         transforms.ToTensor(is_test=True),
         transforms.Normalize([0.485, 0.456, 0.406],
                              [0.229, 0.224, 0.225])
