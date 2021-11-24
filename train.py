@@ -20,6 +20,12 @@ parser.add_argument('--lr', default=1e-4, type=float,
 parser.add_argument('--L2penalty', default=1e-4, type=float,
                     help='weight_decay, i.e. L2normPenalty')
 
+loss_params = {
+    '_alpha': 0.5,
+    '_lambda': 1,
+    '_mu': 1
+}
+
 def get_model(**kwargs):
     base_resnet50 = get_resnet50(pretrained=True)
     # encoder output a tuple of each block's output
@@ -37,13 +43,13 @@ def check_loss_on_val(val_dataloader, model, device):
             y_val = y_val.to(device=device)
             y_pred = model(x_val)
             
-            #TODO: define loss
             _loss = compute_loss(pred=y_pred,
                                  truth=y_val,
                                  device=device,
-                                 alpha=0.5,
-                                 lambda=1,
-                                 mu=1)
+                                 _alpha=loss_params['_alpha'], 
+                                 _lambda=loss_params['_lambda'], 
+                                 _mu=loss_params['_mu'])
+            loss += _loss
         loss /= len(val_dataloader)
         print("")
             

@@ -57,9 +57,9 @@ def compute_loss(pred, truth, device, **kwargs):
             loss_normal: 
     '''
     
-    _alpha = kwargs.get('alpha', default=0.5)
-    _lambda = kwargs.get('lambda', default=1)
-    _mu = kwargs.get('mu', default=1)
+    _alpha = kwargs.get('_alpha', default=0.5)
+    _lambda = kwargs.get('_lambda', default=1)
+    _mu = kwargs.get('_mu', default=1)
     
     # TODO: In the paper, L1 norm is used
     # TODO: Try L2 norm
