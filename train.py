@@ -86,11 +86,7 @@ def train(train_dataloader,
                       %(epoch, 
                         i, len(train_dataloader), 
                         loss, 
-                        (end_time - start_time)))
-            
-            
-            
-            
+                        (end_time - start_time)))  
 
 def main():
     # hyperparams
