@@ -4,6 +4,7 @@ from PIL import Image
 from load_data_utils import nyu2_paired_path
 import torch.nn as nn
 import random
+import cv2
 
 class nyu2_dataset(Dataset):
     
@@ -23,9 +24,9 @@ class nyu2_dataset(Dataset):
     def __getitem__(self, index):
         path_xtr, path_ytr = self.path_pairs[index]
         
-        x_tr = Image.open(path_xtr)
-        y_tr = Image.open(path_ytr)
-        
+        x_tr = cv2.imread(path_xtr)
+        y_tr = cv2.imread(path_ytr)
+                
         if self.transforms:
             x_tr = self.transforms(x_tr)
             y_tr = self.transforms(y_tr)
@@ -51,24 +52,28 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
     print("---------------- Loading Dataloaders ----------------")
     
     # used for trainingset and validation set
-    train_val_transforms = nn.Sequential(
+    train_val_transforms = transforms.Compose([
         # output is a (224, 224, 3) tensor
+        transforms.ToPILImage(),
         transforms.Scale(size=[320, 240]),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(5),
         transforms.RandomCrop([304, 228]),
         transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406],
-                             [0.229, 0.224, 0.225])
+        # transforms.Normalize([0.485, 0.456, 0.406],
+        #                      [0.229, 0.224, 0.225])
+        ]
     )
     
     # used for testing set
-    test_transforms = nn.Sequential(
+    test_transforms = transforms.Compose([
+        transforms.ToPILImage(),
         transforms.Scale(size=[320, 240]),
         transforms.RandomCrop([304, 228]),
-        transforms.ToTensor(is_test=True),
-        transforms.Normalize([0.485, 0.456, 0.406],
-                             [0.229, 0.224, 0.225])
+        transforms.ToTensor(),
+        # transforms.Normalize([0.485, 0.456, 0.406],
+        #                      [0.229, 0.224, 0.225]),
+        ]
     )
     
     # preparing the pathpairs for different parts of data

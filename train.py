@@ -1,9 +1,9 @@
 import argparse
 import torch
 import torch.optim as optim
+from tqdm import tqdm
 from datetime import datetime
-from time import time
-from torch.autograd import Variable
+import time
 from utils import load_param, save_param
 from model.model import spacialFeatureExtractor
 from model.resnet_module import get_resnet50
@@ -33,6 +33,7 @@ def get_model(**kwargs):
         E = Encoder_resnet50(base=base_resnet50)
     model = spacialFeatureExtractor(Encoder=E,
                                     encoder_block_dims=[256, 512, 1024, 2048])
+    return model
 
 def check_loss_on_val(val_dataloader, model, device):
     model.eval()
@@ -51,7 +52,11 @@ def check_loss_on_val(val_dataloader, model, device):
                                  _mu=loss_params['_mu'])
             loss += _loss
         loss /= len(val_dataloader)
-        print("")
+        print("Test on [val]: loss avg: %.4f" 
+              % (
+                    loss    
+                )
+              )
             
 
 def train(train_dataloader,
@@ -67,9 +72,9 @@ def train(train_dataloader,
     model = model.to(device=device)
     
     start_time = time.time()
-    for epoch in epochs:
+    for epoch in range(epochs):
         # batched_image_size: (batch_size, C, H, W)
-        for i, (x_tr, y_tr) in enumerate(train_dataloader):
+        for i, (x_tr, y_tr) in enumerate(tqdm(train_dataloader)):
             # turn to train mode
             model.train()
             
@@ -78,7 +83,12 @@ def train(train_dataloader,
             y_pred = model(x_tr)
             
             # TODO: define loss
-            loss = []
+            loss = compute_loss(pred=y_pred,
+                                truth=y_tr,
+                                device=device,
+                                _alpha=loss_params['_alpha'], 
+                                _lambda=loss_params['_lambda'], 
+                                _mu=loss_params['_mu'])
             
             optimizer.zero_grad()
             
@@ -89,10 +99,13 @@ def train(train_dataloader,
             end_time = time.time()
             if i % print_every == 0:
                 print("[Epoch]: %d [Iteration]: %d/%d, [loss]: %.4f, [Time Spent]: %.3f"
-                      %(epoch, 
-                        i, len(train_dataloader), 
-                        loss, 
-                        (end_time - start_time)))  
+                      %(
+                            epoch, 
+                            i, len(train_dataloader), 
+                            loss, 
+                            (end_time - start_time)
+                        )
+                      )  
 
 def main():
     # hyperparams
@@ -107,13 +120,15 @@ def main():
     batchsize = 32
     # ---------------- params ---------------- #
     
+    print("main(): Getting model......")
     model = get_model(encoder='resnet50')
     optimizer = optim.Adam(model.parameters(), 
                            lr=lr,
                            weight_decay=weight_decay)
+    print("main(): Getting dataloaders......")
     train_set, val_set, _ = nyu2_dataloaders(batchsize=batchsize,
                                              nyu2_path='./nyu2_train')
-    
+    print("main(): start training......")
     # all epochs wrapped in train()
     train(train_dataloader=train_set,
           val_dataloader=val_set,

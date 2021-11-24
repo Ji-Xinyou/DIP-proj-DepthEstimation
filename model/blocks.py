@@ -68,7 +68,7 @@ class upsampling(nn.Module):
                                  kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1_2 = nn.BatchNorm2d(out_channels)
         
-        self.conv = nn.Conv2d(in_channels, out_channels,
+        self.conv2 = nn.Conv2d(in_channels, out_channels,
                               kernel_size=5, stride=1, padding=2, bias=False)
         self.bn2 = nn.BatchNorm2d(out_channels)
         
@@ -77,8 +77,9 @@ class upsampling(nn.Module):
         In forward pass, the (..., H, W) will be changed
         it will be upsampled to increase the feature maps' resolution
         '''
-        x = functional.interpolate(x, size=upsample_size, 
-                                   mode='trilinear')
+        x = functional.interpolate(x, 
+                                   size=upsample_size, 
+                                   mode='bilinear')
         _x = self.conv1(x)
         _x = self.bn1(_x)
         _x = self.relu(_x)
@@ -131,7 +132,7 @@ class Decoder(nn.Module):
         # up4 reconstruct to the shape before encoder's first conv2d
         up4_shape = [2 * x_b1.size(2), 2 * x_b1.size(3)]
         
-        x = nn.Relu(self.bn(self.conv2(x_b4)))
+        x = functional.relu(self.bn(self.conv2(x_b4)))
         x = self.up1(x, up1_shape)
         x = self.up2(x, up2_shape)
         x = self.up3(x, up3_shape)

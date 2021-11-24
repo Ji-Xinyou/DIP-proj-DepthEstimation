@@ -8,16 +8,20 @@ def nyu2_paired_path(nyu2_path):
     '''
     paired_path = []
     pair = []
+    jpg_paths, png_paths = [], []
     for curDir, dirs, files in os.walk(nyu2_path):
         for file in files:
-            # all file names
-            if file.endswith(".jpg"): # x_train
-                path = os.path.join(curDir, file)
-                pair.append(path)
+            file = os.path.join(curDir, file)
+            if file.endswith(".jpg"):
+                jpg_paths.append(file)
             else:
-                path = os.path.join(curDir, file)
-                pair.append(path)
-                paired_path.append(pair)
-                pair = []
-                
+                png_paths.append(file)
+            
+    jpg_paths.sort(key=lambda x: x[:-4])
+    png_paths.sort(key=lambda x: x[:-4])
+    
+    for jpg_path, png_path in zip(jpg_paths, png_paths):
+        pair = [jpg_path, png_path]
+        paired_path.append(pair)
+    
     return paired_path
