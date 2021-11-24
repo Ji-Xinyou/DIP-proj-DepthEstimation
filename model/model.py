@@ -9,7 +9,8 @@ class spacialFeatureExtractor(nn.Module):
     '''
     def __init__(self, 
                  Encoder, 
-                 encoder_block_dims = [256, 512, 1024, 2048]
+                 encoder_block_dims = [256, 512, 1024, 2048],
+                 **kwargs
                  ):
         '''
         Args:
@@ -28,3 +29,27 @@ class spacialFeatureExtractor(nn.Module):
         # the output has init_decoder_channels of feature maps
         
         # by default, use resnet50 as encoder
+        self.encoder = Encoder
+        
+        self.Decoder = Decoder(in_channels=encoder_block_dims[-1])
+        self.MFF     = MFF(in_channel_list=encoder_block_dims,
+                           out_channels=encoder_block_dims[-1])
+        
+        # the input_dim of refineblock is determined
+        # by the decoder and mff, which is determined by the encoder
+        # if the encoder is not resnet50
+        # decoder, mff, refinement block should be changed accordingly
+        self.refine  = RefineBlock()
+        
+        def forward(self, x):
+            x_b1, x_b2, x_b3, x_b4 = self.encoder(x)
+            x_D = self.decoder(x_b1, x_b2, x_b3, x_b4)
+            x_mff = self.MFF(x_b1, x_b2, x_b3, x_b4)
+            
+            # concat the x_D and x_mff
+            x_D_MFF = torch.cat((x_D, x_mff), 1)
+            
+            depth = self.refine(x_D_MFF)
+            
+            # (B, 1, H, W) image
+            return depth

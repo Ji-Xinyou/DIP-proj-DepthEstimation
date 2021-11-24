@@ -4,7 +4,7 @@ import torch.nn.functional as functional
 
 class Encoder_resnet50(nn.Module):
     
-    def __init__(self, base, out_channels):
+    def __init__(self, base):
         super(Encoder_resnet50, self).__init__()
         # encoder is a pretrained resnet, inherit the architecture
         self.conv1 = base.conv1
