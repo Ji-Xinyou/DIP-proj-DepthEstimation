@@ -5,10 +5,8 @@ from tqdm import tqdm
 from datetime import datetime
 import time
 from utils import load_param, save_param
-from model.model import spacialFeatureExtractor
-from model.resnet_module import get_resnet50
-from model.blocks import Encoder_resnet50
 from load_data import nyu2_dataloaders
+from model.model import get_model
 from loss import compute_loss
 
 description = "CS386 course project - Depth Estimation In Soccer Games"
@@ -28,27 +26,17 @@ parser.add_argument('--mu', default=1, type=int,
 
 args = parser.parse_args()
 
-
 loss_params = {
     '_alpha': args.alpha,
     '_lambda': args.lmbd,
     '_mu': args.mu
 }
 
-def get_model(**kwargs):
-    base_resnet50 = get_resnet50(pretrained=True)
-    # encoder output a tuple of each block's output
-    if kwargs == None or kwargs['encoder'] == 'resnet50':
-        E = Encoder_resnet50(base=base_resnet50)
-    model = spacialFeatureExtractor(Encoder=E,
-                                    encoder_block_dims=[256, 512, 1024, 2048])
-    return model
-
-def check_loss_on_val(val_dataloader, model, device):
+def check_loss_on_set(dataloader, model, device):
     model.eval()
     loss = 0
     with torch.no_grad():
-        for x_val, y_val in val_dataloader:
+        for x_val, y_val in dataloader:
             x_val = x_val.to(device=device)
             y_val = y_val.to(device=device)
             y_pred = model(x_val)
@@ -60,30 +48,26 @@ def check_loss_on_val(val_dataloader, model, device):
                                  _lambda=loss_params['_lambda'], 
                                  _mu=loss_params['_mu'])
             loss += _loss
-        loss /= len(val_dataloader)
+        loss /= len(dataloader)
         print("Test on [val]: loss avg: %.4f" 
               % (
                     loss    
                 )
               )
             
-
 def train(train_dataloader,
           val_dataloader,
           model,
           optimizer,
-          epochs):
+          epochs,
+          device):
     print_every = 50
-    
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    _device = device
-    device = torch.device(device)
     
     model = model.to(device=device)
     
     start_time = time.time()
     
-    print("train(): Training on {}".format(_device))
+    print("train(): Training on {}".format(device))
     
     for epoch in range(epochs):
         # batched_image_size: (batch_size, C, H, W)
@@ -111,6 +95,7 @@ def train(train_dataloader,
             
             end_time = time.time()
             if i % print_every == 0:
+                # print the information of the epoch
                 print("[Epoch]: %d [Iteration]: %d/%d, [loss]: %.4f, [Time Spent]: %.3f"
                       %(
                             epoch, 
@@ -118,8 +103,13 @@ def train(train_dataloader,
                             loss, 
                             (end_time - start_time)
                         )
-                      )  
-
+                      )
+                
+        # check on validation set each epoch
+        check_loss_on_set(dataloader=val_dataloader,
+                          model=model,
+                          device=device)
+    
 def main():
     # hyperparams
     global args
@@ -132,21 +122,34 @@ def main():
     batchsize = 32
     # ---------------- params ---------------- #
     
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = torch.device(device)
+    
     print("main(): Getting model......")
     model = get_model(encoder='resnet50')
+    
     optimizer = optim.Adam(model.parameters(), 
                            lr=lr,
                            weight_decay=weight_decay)
+    
     print("main(): Getting dataloaders......")
-    train_set, val_set, _ = nyu2_dataloaders(batchsize=batchsize,
+    train_set, val_set, test_set = nyu2_dataloaders(batchsize=batchsize,
                                              nyu2_path='./nyu2_train')
+    
     print("main(): start training......")
     # all epochs wrapped in train()
     train(train_dataloader=train_set,
           val_dataloader=val_set,
           model=model,
           optimizer=optimizer,
-          epochs=epochs)
+          epochs=epochs,
+          device=device)
+    
+    print("Training Session is over, test the model on testset")
+    # after training, test it on testset
+    check_loss_on_set(dataloader=test_set,
+                      model=model,
+                      device=device)
     
     # SAVE THE PARAMETERS
     # default is current time, change it whatever you like
@@ -154,6 +157,7 @@ def main():
     save_param(model=model,
                pth_path='./model_pth/{}.pth'.format(filelabel))
 
+
+
 if __name__ == '__main__':
     main()
-    

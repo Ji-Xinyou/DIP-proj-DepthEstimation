@@ -104,10 +104,13 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
     
     # datalodaers, to be enumerated
     train_loader  = DataLoader (dataset=train_dataset,
+                                shuffle=True,
                                 batch_size=batchsize)
     val_loader    = DataLoader (dataset=val_dataset,
+                                shuffle=True,
                                 batch_size=batchsize)
     test_loader   = DataLoader (dataset=test_dataset,
+                                shuffle=True,
                                 batch_size=batchsize)
     
     print("----------------- DataLoaders Ready ----------------")
