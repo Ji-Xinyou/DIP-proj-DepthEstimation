@@ -67,11 +67,15 @@ def train(train_dataloader,
     print_every = 50
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    _device = device
     device = torch.device(device)
     
     model = model.to(device=device)
     
     start_time = time.time()
+    
+    print("train(): Training on {}".format(_device))
+    
     for epoch in range(epochs):
         # batched_image_size: (batch_size, C, H, W)
         for i, (x_tr, y_tr) in enumerate(tqdm(train_dataloader)):
