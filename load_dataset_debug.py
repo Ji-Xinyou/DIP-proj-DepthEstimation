@@ -1,11 +1,6 @@
 from load_data import nyu2_dataloaders
-from load_data_utils import nyu2_paired_path
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.utils.data import Dataset
-from PIL import Image
-import torchvision.transforms as transforms
-import cv2
 
 if __name__ == '__main__':
     train_loader, val_loader, test_loader = nyu2_dataloaders()

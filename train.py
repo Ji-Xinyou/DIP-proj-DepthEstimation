@@ -19,11 +19,20 @@ parser.add_argument('--lr', default=1e-4, type=float,
                     help='initial learning rate')
 parser.add_argument('--L2penalty', default=1e-4, type=float,
                     help='weight_decay, i.e. L2normPenalty')
+parser.add_argument('--alpha', default=0.5, type=float,
+                    help='loss_params alpha, used in logarithm')
+parser.add_argument('--lmbd', default=1, type=float,
+                    help='coefficient of loss_grad term')
+parser.add_argument('--mu', default=1, type=int,
+                    help='coefficient of loss_normal term')
+
+args = parser.parse_args()
+
 
 loss_params = {
-    '_alpha': 0.5,
-    '_lambda': 1,
-    '_mu': 1
+    '_alpha': args.alpha,
+    '_lambda': args.lmbd,
+    '_mu': args.mu
 }
 
 def get_model(**kwargs):
@@ -114,7 +123,6 @@ def train(train_dataloader,
 def main():
     # hyperparams
     global args
-    args = parser.parse_args()
     
     # ---------------- params ---------------- #
     epochs = args.epochs
