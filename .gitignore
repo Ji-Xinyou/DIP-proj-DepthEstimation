@@ -1,1 +1,5 @@
-*/__pychche__
+*/__pycache__
+
+.DS_STORE
+
+*.pth
