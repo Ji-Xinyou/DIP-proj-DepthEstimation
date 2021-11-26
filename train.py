@@ -23,6 +23,8 @@ parser.add_argument('--lmbd', default=1, type=float,
                     help='coefficient of loss_grad term')
 parser.add_argument('--mu', default=1, type=int,
                     help='coefficient of loss_normal term')
+parser.add_argument('--batchsize', default=6, type=int,
+                    help="batchsize of training")
 
 args = parser.parse_args()
 
@@ -119,7 +121,7 @@ def main():
     lr = args.lr
     weight_decay = args.L2penalty
     # batchsize should better be more than 32 since BN is used frequently
-    batchsize = 32
+    batchsize = args.batchsize
     # ---------------- params ---------------- #
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -134,7 +136,7 @@ def main():
     
     print("main(): Getting dataloaders......")
     train_set, val_set, test_set = nyu2_dataloaders(batchsize=batchsize,
-                                             nyu2_path='./nyu2_train')
+                                                    nyu2_path='./nyu2_train')
     
     print("main(): start training......")
     # all epochs wrapped in train()
