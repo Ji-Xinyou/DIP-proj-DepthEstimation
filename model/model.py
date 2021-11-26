@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from resnet_module import get_resnet50
-import blocks
+from . import resnet_module
+from . import blocks
 
 class spacialFeatureExtractor(nn.Module):
     '''
@@ -33,7 +33,7 @@ class spacialFeatureExtractor(nn.Module):
         
         self.Decoder = blocks.Decoder(in_channels=encoder_block_dims[-1])
         self.MFF     = blocks.MFF(in_channel_list=encoder_block_dims,
-                                  out_channels=encoder_block_dims[-1])
+                                  out_channels=encoder_block_dims[-1] // 32)
         
         # the input_dim of refineblock is determined
         # by the decoder and mff, which is determined by the encoder
@@ -55,7 +55,7 @@ class spacialFeatureExtractor(nn.Module):
         return depth
 
 def get_model(**kwargs):
-    base_resnet50 = get_resnet50(pretrained=True)
+    base_resnet50 = resnet_module.get_resnet50(pretrained=True)
     # encoder output a tuple of each block's output
     if kwargs == None or kwargs['encoder'] == 'resnet50':
         E = blocks.Encoder_resnet50(base=base_resnet50)

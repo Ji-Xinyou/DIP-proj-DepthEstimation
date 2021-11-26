@@ -1,5 +1,8 @@
 */__pycache__
 
+/nyu2_train
+model_pth
+
 .DS_STORE
 
 *.pth

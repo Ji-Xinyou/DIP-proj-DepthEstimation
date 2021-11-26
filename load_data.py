@@ -26,11 +26,12 @@ class nyu2_dataset(Dataset):
         
         x_tr = cv2.imread(path_xtr)
         y_tr = cv2.imread(path_ytr)
+        y_tr = cv2.cvtColor(y_tr, cv2.COLOR_BGR2GRAY)
                 
         if self.transforms:
             x_tr = self.transforms(x_tr)
             y_tr = self.transforms(y_tr)
-        
+            
         return (x_tr, y_tr)
 
     def __len__(self):
@@ -105,13 +106,16 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
     # datalodaers, to be enumerated
     train_loader  = DataLoader (dataset=train_dataset,
                                 shuffle=True,
-                                batch_size=batchsize)
+                                batch_size=batchsize,
+                                num_workers=4)
     val_loader    = DataLoader (dataset=val_dataset,
                                 shuffle=True,
-                                batch_size=batchsize)
+                                batch_size=batchsize,
+                                num_workers=4)
     test_loader   = DataLoader (dataset=test_dataset,
                                 shuffle=True,
-                                batch_size=batchsize)
+                                batch_size=batchsize,
+                                num_workers=4)
     
     print("----------------- DataLoaders Ready ----------------")
     print("Exit nyu2_dataloaders()")

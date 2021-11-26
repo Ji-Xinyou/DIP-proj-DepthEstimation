@@ -77,9 +77,11 @@ class upsampling(nn.Module):
         In forward pass, the (..., H, W) will be changed
         it will be upsampled to increase the feature maps' resolution
         '''
+        
         x = functional.interpolate(x, 
                                    size=upsample_size, 
                                    mode='bilinear')
+
         _x = self.conv1(x)
         _x = self.bn1(_x)
         _x = self.relu(_x)
@@ -123,14 +125,14 @@ class Decoder(nn.Module):
         # by default: 2048 -> 64
         self.up4 = upsampling(in_channels, in_channels // 2)
         in_channels //= 2
-        
+
     def forward(self, x_b1, x_b2, x_b3, x_b4):
         # params are used to acquire the upsampling shape
-        up1_shape = [x_b3.size(2), x_b3.size(3)]
-        up2_shape = [x_b2.size(2), x_b2.size(3)]  
-        up3_shape = [x_b1.size(2), x_b1.size(3)]
+        up1_shape = [2 * x_b3.size(2), 2 * x_b3.size(3)]
+        up2_shape = [2 * x_b2.size(2), 2 * x_b2.size(3)]  
+        up3_shape = [2 * x_b1.size(2), 2 * x_b1.size(3)]
         # up4 reconstruct to the shape before encoder's first conv2d
-        up4_shape = [2 * x_b1.size(2), 2 * x_b1.size(3)]
+        up4_shape = [4 * x_b1.size(2), 4 * x_b1.size(3)]
         
         x = functional.relu(self.bn(self.conv2(x_b4)))
         x = self.up1(x, up1_shape)
@@ -169,13 +171,13 @@ class MFF(nn.Module):
         
     def forward(self, x_b1, x_b2, x_b3, x_b4):
         # the output of decoder
-        up4_shape = [2 * x_b1.size(2), 2 * x_b1.size(3)]
+        up4_shape = [4 * x_b1.size(2), 4 * x_b1.size(3)]
         
         mff_1 = self.up5(x_b1, up4_shape)
         mff_2 = self.up6(x_b2, up4_shape)
         mff_3 = self.up7(x_b3, up4_shape)
         mff_4 = self.up8(x_b4, up4_shape)
-        
+
         # out_channels dim
         mff = torch.cat((mff_1, mff_2, mff_3, mff_4), 1)
         

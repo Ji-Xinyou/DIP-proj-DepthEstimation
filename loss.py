@@ -57,9 +57,9 @@ def compute_loss(pred, truth, device, **kwargs):
             loss_normal: 
     '''
     
-    _alpha = kwargs.get('_alpha', default=0.5)
-    _lambda = kwargs.get('_lambda', default=1)
-    _mu = kwargs.get('_mu', default=1)
+    _alpha = kwargs.get('_alpha', 0.5)
+    _lambda = kwargs.get('_lambda', 1)
+    _mu = kwargs.get('_mu', 1)
     
     # TODO: In the paper, L1 norm is used
     # TODO: Try L2 norm
@@ -67,12 +67,12 @@ def compute_loss(pred, truth, device, **kwargs):
     # first term of loss
     loss_depth = torch.log(torch.abs(truth - pred) + _alpha).mean()
     
-    grad_of = Sobel.to(device=device)
+    grad_of = Sobel().to(device=device)
     pred_grad, truth_grad = grad_of(pred), grad_of(truth)
-    pred_dx = pred_grad[:, 0:, :, :].contiguous().view_as(truth)
-    pred_dy = pred_grad[:, 1:, :, :].contiguous().view_as(truth)
-    truth_dx = truth_grad[:, 0:, :, :].contiguous().view_as(truth)
-    truth_dy = truth_grad[:, 1:, :, :].contiguous().view_as(truth)
+    pred_dx = pred_grad[:, 0, :, :].contiguous().view_as(truth)
+    pred_dy = pred_grad[:, 1, :, :].contiguous().view_as(truth)
+    truth_dx = truth_grad[:, 0, :, :].contiguous().view_as(truth)
+    truth_dy = truth_grad[:, 1, :, :].contiguous().view_as(truth)
     
     # second term of loss
     loss_grad = torch.log(torch.abs(truth_dx - pred_dx) + _alpha).mean() + \
@@ -80,8 +80,9 @@ def compute_loss(pred, truth, device, **kwargs):
     
     # (B, 1, H, W)
     normal_z_shape = [truth.size(0), 1, truth.size(2), truth.size(3)]
-    pred_normal = torch.cat((-pred_dx, -pred_dy, torch.ones(*normal_z_shape)), 1)
-    truth_normal = torch.cat((-truth_dx, -truth_dy, torch.ones(*normal_z_shape)), 1)
+    z_grad = torch.ones(*normal_z_shape).to(device=device)
+    pred_normal = torch.cat((-pred_dx, -pred_dy, z_grad), 1)
+    truth_normal = torch.cat((-truth_dx, -truth_dy, z_grad), 1)
     
     # similarity computed in the depth_derivative channel (dim 1)
     cos_sim = nn.CosineSimilarity(dim=1, eps=1e-8)

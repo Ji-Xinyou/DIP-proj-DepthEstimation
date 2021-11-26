@@ -61,7 +61,7 @@ def train(train_dataloader,
           optimizer,
           epochs,
           device):
-    print_every = 50
+    print_every = 5
     
     model = model.to(device=device)
     
@@ -96,9 +96,9 @@ def train(train_dataloader,
             end_time = time.time()
             if i % print_every == 0:
                 # print the information of the epoch
-                print("[Epoch]: %d [Iteration]: %d/%d, [loss]: %.4f, [Time Spent]: %.3f"
+                print("[Epoch]: %d/%d [Iteration]: %d/%d, [loss]: %.4f, [Time Spent]: %.3f"
                       %(
-                            epoch, 
+                            epoch, epochs, 
                             i, len(train_dataloader), 
                             loss, 
                             (end_time - start_time)
@@ -156,8 +156,6 @@ def main():
     filelabel = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
     save_param(model=model,
                pth_path='./model_pth/{}.pth'.format(filelabel))
-
-
 
 if __name__ == '__main__':
     main()
