@@ -61,11 +61,8 @@ def compute_loss(pred, truth, device, **kwargs):
     _lambda = kwargs.get('_lambda', 1)
     _mu = kwargs.get('_mu', 1)
     
-    # TODO: In the paper, L1 norm is used
-    # TODO: Try L2 norm
-    
     # first term of loss
-    loss_depth = torch.log(torch.abs(truth - pred) + _alpha).mean()
+    # loss_depth = torch.log(torch.abs(truth - pred) + _alpha).mean()
     
     grad_of = Sobel().to(device=device)
     pred_grad, truth_grad = grad_of(pred), grad_of(truth)
@@ -90,4 +87,17 @@ def compute_loss(pred, truth, device, **kwargs):
     
     loss = loss_depth + _lambda * loss_grad + _mu * loss_normal
     
+    ## ---------- eigengrad: Scale-invariant loss with gradients ---------- ##
+    # d = torch.log(truth + _alpha) - torch.log(pred + _alpha)
+    # square_d = torch.square(d)
+    
+    # term_1 = square_d.mean()
+    # term_2 = -1 * (_lambda / 2) * (d.mean() ** 2)
+    
+    # d_dx = torch.log(truth_dx + _alpha) - torch.log(pred_dx + _alpha)
+    # d_dy = torch.log(truth_dy + _alpha) - torch.log(pred_dy + _alpha)
+    # term_3 = (torch.square(d_dx) + torch.square(d_dy)).mean()
+    
+    # loss = term_1 + term_2 + term_3
+    ## ---------- eigengrad: Scale-invariant loss with gradients ---------- ##
     return loss

@@ -23,7 +23,7 @@ parser.add_argument('--lmbd', default=1, type=float,
                     help='coefficient of loss_grad term')
 parser.add_argument('--mu', default=1, type=int,
                     help='coefficient of loss_normal term')
-parser.add_argument('--batchsize', default=6, type=int,
+parser.add_argument('--batchsize', default=8, type=int,
                     help="batchsize of training")
 
 args = parser.parse_args()
@@ -81,7 +81,6 @@ def train(train_dataloader,
             y_tr = y_tr.to(device=device)
             y_pred = model(x_tr)
             
-            # TODO: define loss
             loss = compute_loss(pred=y_pred,
                                 truth=y_tr,
                                 device=device,
