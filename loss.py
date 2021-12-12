@@ -57,26 +57,31 @@ def compute_loss(pred, truth, device, **kwargs):
             loss_normal: 
     '''
     
-    _alpha = kwargs.get('_alpha', 0.5)
-    _lambda = kwargs.get('_lambda', 1)
-    _mu = kwargs.get('_mu', 1)
-    
-    # TODO: In the paper, L1 norm is used
-    # TODO: Try L2 norm
-    
+    _alpha = kwargs.get('_alpha', 0.5)  # Logarithm
+    _lambda = kwargs.get('_lambda', 1)  # Loss_grad
+    _mu = kwargs.get('_mu', 1)          # Loss_normal
+    _gamma = kwargs.get('_gamma', 1)    # Loss_scale
+        
     # first term of loss
-    loss_depth = torch.log(torch.abs(truth - pred) + _alpha).mean()
+    d = torch.abs(truth - pred)
+    loss_depth = torch.log(d.norm() + _alpha).mean()
+    
+    d_mean = d.mean()
+    loss_scale = -1 * _gamma * d_mean * d_mean
     
     grad_of = Sobel().to(device=device)
     pred_grad, truth_grad = grad_of(pred), grad_of(truth)
+    
     pred_dx = pred_grad[:, 0, :, :].contiguous().view_as(truth)
     pred_dy = pred_grad[:, 1, :, :].contiguous().view_as(truth)
+    
     truth_dx = truth_grad[:, 0, :, :].contiguous().view_as(truth)
     truth_dy = truth_grad[:, 1, :, :].contiguous().view_as(truth)
     
     # second term of loss
-    loss_grad = torch.log(torch.abs(truth_dx - pred_dx) + _alpha).mean() + \
-                torch.log(torch.abs(truth_dy - pred_dy) + _alpha).mean()
+    loss_grad = _lambda * \
+                (torch.log(torch.abs(truth_dx - pred_dx) + _alpha).mean() + \
+                torch.log(torch.abs(truth_dy - pred_dy) + _alpha).mean())
     
     # (B, 1, H, W)
     normal_z_shape = [truth.size(0), 1, truth.size(2), truth.size(3)]
@@ -86,8 +91,12 @@ def compute_loss(pred, truth, device, **kwargs):
     
     # similarity computed in the depth_derivative channel (dim 1)
     cos_sim = nn.CosineSimilarity(dim=1, eps=1e-8)
-    loss_normal = torch.abs(1 - cos_sim(truth_normal, pred_normal)).mean()
+    loss_normal = _mu * \
+                  (torch.abs(1 - cos_sim(truth_normal, pred_normal)).mean())
     
-    loss = loss_depth + _lambda * loss_grad + _mu * loss_normal
+    loss = loss_depth + \
+           loss_grad + \
+           loss_normal + \
+           loss_scale
     
     return loss

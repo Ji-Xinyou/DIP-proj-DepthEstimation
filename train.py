@@ -6,8 +6,8 @@ from datetime import datetime
 import time
 from utils import load_param, save_param
 from load_data import nyu2_dataloaders
-from model.model import get_model
 from loss import compute_loss
+from model.Res_Unet import Encoder_Decoder_Net
 
 description = "CS386 course project - Depth Estimation In Soccer Games"
 parser = argparse.ArgumentParser(description=description)
@@ -23,7 +23,9 @@ parser.add_argument('--lmbd', default=1, type=float,
                     help='coefficient of loss_grad term')
 parser.add_argument('--mu', default=1, type=int,
                     help='coefficient of loss_normal term')
-parser.add_argument('--batchsize', default=6, type=int,
+parser.add_argument('--gamma', default=1, type=int,
+                    help='coefficient of loss_scale term')
+parser.add_argument('--batchsize', default=32, type=int,
                     help="batchsize of training")
 
 args = parser.parse_args()
@@ -31,7 +33,8 @@ args = parser.parse_args()
 loss_params = {
     '_alpha': args.alpha,
     '_lambda': args.lmbd,
-    '_mu': args.mu
+    '_mu': args.mu,
+    '_gamma': args.gamma
 }
 
 def check_loss_on_set(dataloader, model, device):
@@ -87,7 +90,8 @@ def train(train_dataloader,
                                 device=device,
                                 _alpha=loss_params['_alpha'], 
                                 _lambda=loss_params['_lambda'], 
-                                _mu=loss_params['_mu'])
+                                _mu=loss_params['_mu'],
+                                _gamma=loss_params['_gamma'])
             
             optimizer.zero_grad()
             
@@ -128,7 +132,7 @@ def main():
     device = torch.device(device)
     
     print("main(): Getting model......")
-    model = get_model(encoder='resnet50')
+    model = Encoder_Decoder_Net.to(device)
     
     optimizer = optim.Adam(model.parameters(), 
                            lr=lr,
