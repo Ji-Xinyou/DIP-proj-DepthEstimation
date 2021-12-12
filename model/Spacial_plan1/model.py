@@ -43,13 +43,18 @@ class spacialFeatureExtractor(nn.Module):
         
     def forward(self, x):
         x_b1, x_b2, x_b3, x_b4 = self.encoder(x)
-        x_D = self.Decoder(x_b1, x_b2, x_b3, x_b4)
+        # params are used to acquire the upsampling shape
+        up1_shape = [2 * x_b3.size(2), 2 * x_b3.size(3)]
+        up2_shape = [2 * x_b2.size(2), 2 * x_b2.size(3)]  
+        up3_shape = [2 * x_b1.size(2), 2 * x_b1.size(3)]
+        # up4 reconstruct to the shape before encoder's first conv2d
+        up4_shape = [4 * x_b1.size(2), 4 * x_b1.size(3)]
+        
+        x_D = self.Decoder(x_b4, up1_shape, up2_shape, up3_shape, up4_shape)
         x_mff = self.MFF(x_b1, x_b2, x_b3, x_b4)
         
         # concat the x_D and x_mff
-        x_D_MFF = torch.cat((x_D, x_mff), 1)
-        
-        depth = self.refine(x_D_MFF)
+        depth = self.refine(torch.cat((x_D, x_mff), 1))
         
         # (B, 1, H, W) image
         return depth

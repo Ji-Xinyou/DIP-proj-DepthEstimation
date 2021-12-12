@@ -6,3 +6,5 @@ model_pth
 .DS_STORE
 
 *.pth
+
+*.pyc

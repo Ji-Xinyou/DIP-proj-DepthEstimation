@@ -61,16 +61,19 @@ class upsampling(nn.Module):
         # this conv maintains the shape
         self.conv1 = nn.Conv2d(in_channels, out_channels,
                                kernel_size=5, stride=1, padding=2, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
+        # self.bn1 = nn.BatchNorm2d(out_channels)
+        self.gn1 = nn.GroupNorm(num_groups=16, num_channels=out_channels)
         self.relu = nn.ReLU(inplace=True)
         
         self.conv1_2 = nn.Conv2d(out_channels, out_channels,
                                  kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1_2 = nn.BatchNorm2d(out_channels)
+        # self.bn1_2 = nn.BatchNorm2d(out_channels)
+        self.gn1_2 = nn.GroupNorm(num_groups=16, num_channels=out_channels)
         
         self.conv2 = nn.Conv2d(in_channels, out_channels,
                               kernel_size=5, stride=1, padding=2, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
+        # self.bn2 = nn.BatchNorm2d(out_channels)
+        self.gn2 = nn.GroupNorm(num_groups=16, num_channels=out_channels)
         
     def forward(self, x, upsample_size):
         '''
@@ -83,11 +86,15 @@ class upsampling(nn.Module):
                                    mode='bilinear')
 
         _x = self.conv1(x)
-        _x = self.bn1(_x)
+        # x_branch2 = self.bn2(self.conv2(x))
+        x_branch2 = self.gn2(self.conv2(x))
+        
+        # _x = self.bn1(_x)
+        _x = self.gn1(_x)
         _x = self.relu(_x)
         
-        x_branch1 = self.bn1_2(self.conv1_2(_x))
-        x_branch2 = self.bn2(self.conv2(x))
+        # x_branch1 = self.bn1_2(self.conv1_2(_x))
+        x_branch1 = self.gn1_2(self.conv1_2(_x))
         
         merge = self.relu(x_branch1 + x_branch2)
         
@@ -106,7 +113,8 @@ class Decoder(nn.Module):
         # H x W not changed
         self.conv2 = nn.Conv2d(in_channels, in_channels // 2,
                                kernel_size=1, stride=1, bias=False)
-        self.bn = nn.BatchNorm2d(in_channels // 2)
+        # self.bn = nn.BatchNorm2d(in_channels // 2)
+        self.gn = nn.GroupNorm(num_groups=32, num_channels=in_channels // 2)
         in_channels //= 2
         
         # in_channels // 2 -> in_channels // 4
@@ -126,15 +134,10 @@ class Decoder(nn.Module):
         self.up4 = upsampling(in_channels, in_channels // 2)
         in_channels //= 2
 
-    def forward(self, x_b1, x_b2, x_b3, x_b4):
-        # params are used to acquire the upsampling shape
-        up1_shape = [2 * x_b3.size(2), 2 * x_b3.size(3)]
-        up2_shape = [2 * x_b2.size(2), 2 * x_b2.size(3)]  
-        up3_shape = [2 * x_b1.size(2), 2 * x_b1.size(3)]
-        # up4 reconstruct to the shape before encoder's first conv2d
-        up4_shape = [4 * x_b1.size(2), 4 * x_b1.size(3)]
+    def forward(self, x_b4, up1_shape, up2_shape, up3_shape, up4_shape):
         
-        x = functional.relu(self.bn(self.conv2(x_b4)))
+        # x = functional.relu(self.bn(self.conv2(x_b4)))
+        x = functional.relu(self.gn(self.conv2(x_b4)))
         x = self.up1(x, up1_shape)
         x = self.up2(x, up2_shape)
         x = self.up3(x, up3_shape)
@@ -166,7 +169,8 @@ class MFF(nn.Module):
         # after concat
         self.conv3 = nn.Conv2d(out_channels, out_channels,
                                kernel_size=5, stride=1, padding=2, bias=False)
-        self.bn = nn.BatchNorm2d(out_channels)
+        # self.bn = nn.BatchNorm2d(out_channels)
+        self.gn = nn.GroupNorm(num_groups=32, num_channels=out_channels)
         self.relu = nn.ReLU(inplace=True)
         
     def forward(self, x_b1, x_b2, x_b3, x_b4):
@@ -182,7 +186,8 @@ class MFF(nn.Module):
         mff = torch.cat((mff_1, mff_2, mff_3, mff_4), 1)
         
         mff = self.conv3(mff)
-        mff = self.bn(mff)
+        # mff = self.bn(mff)
+        mff = self.gn(mff)
         mff = self.relu(mff)
         
         return mff
@@ -213,11 +218,13 @@ class RefineBlock(nn.Module):
         
         self.conv1 = nn.Conv2d(input_dim, input_dim,
                                kernel_size=5, stride=1, padding=2, bias=False)
-        self.bn1 = nn.BatchNorm2d(input_dim)
+        # self.bn1 = nn.BatchNorm2d(input_dim)
+        self.gn1 = nn.GroupNorm(num_groups=32, num_channels=input_dim)
         
         self.conv2 = nn.Conv2d(input_dim, input_dim,
                                kernel_size=5, stride=1, padding=2, bias=False)
-        self.bn2 = nn.BatchNorm2d(input_dim)
+        # self.bn2 = nn.BatchNorm2d(input_dim)
+        self.gn2 = nn.GroupNorm(num_groups=32, num_channels=input_dim)
         
         # output layer
         self.conv3 = nn.Conv2d(input_dim, 1,
@@ -225,8 +232,11 @@ class RefineBlock(nn.Module):
                                bias=True)
         
     def forward(self, x):
-        x = functional.relu(self.bn1(self.conv1(x)))
-        x = functional.relu(self.bn2(self.conv2(x)))
+        # x = functional.relu(self.bn1(self.conv1(x)))
+        # x = functional.relu(self.bn2(self.conv2(x)))
+        
+        x = functional.relu(self.gn1(self.conv1(x)))
+        x = functional.relu(self.gn2(self.conv2(x)))
         
         x = self.conv3(x)
         
