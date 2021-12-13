@@ -70,6 +70,7 @@ def compute_loss(pred, truth, device, **kwargs):
     loss_scale = -1 * _gamma * d_mean * d_mean
     
     grad_of = Sobel().to(device=device)
+    grad_of = Sobel()
     pred_grad, truth_grad = grad_of(pred), grad_of(truth)
     
     pred_dx = pred_grad[:, 0, :, :].contiguous().view_as(truth)
@@ -93,6 +94,8 @@ def compute_loss(pred, truth, device, **kwargs):
     cos_sim = nn.CosineSimilarity(dim=1, eps=1e-8)
     loss_normal = _mu * \
                   (torch.abs(1 - cos_sim(truth_normal, pred_normal)).mean())
+    
+    print(loss_depth, loss_grad, loss_normal, loss_scale)
     
     loss = loss_depth + \
            loss_grad + \

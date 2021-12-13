@@ -66,7 +66,7 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
         transforms.Scale(size=[320, 240]),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(5),
-        transforms.RandomCrop([304, 228]),
+        transforms.RandomCrop([224, 224]),
         transforms.ToTensor(),
         ]
     )
@@ -75,7 +75,7 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
     test_transforms = transforms.Compose([
         transforms.ToPILImage(),
         transforms.Scale(size=[320, 240]),
-        transforms.RandomCrop([304, 228]),
+        transforms.RandomCrop([224, 224]),
         transforms.ToTensor(),
         ]
     )

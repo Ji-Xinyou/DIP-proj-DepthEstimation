@@ -59,6 +59,8 @@ class spacialFeatureExtractor(nn.Module):
         # (B, 1, H, W) image
         return depth
 
+
+
 def get_model(**kwargs):
     base_resnet50 = resnet_module.get_resnet50(pretrained=True)
     # encoder output a tuple of each block's output

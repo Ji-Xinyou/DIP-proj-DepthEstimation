@@ -18,9 +18,11 @@ class Residual_Encoder(nn.Module):
         # inp -> mid_planes[0], mp[0] -> mp[1]， ..., mp[l - 2] -> mp[l - 1], mp[l - 1] -> outp
         self.inconv = Conv_Norm_ReLU(inp=inp,
                                      outp=mid_planes[0],
-                                     leaky_alpha=0.02)
+                                     leaky_alpha=0.02,
+                                     stride=1)
         # dim = mp[0] now
         # each block: residualdouble conv + conv to next dim
+        # also needs some downsampling to reduce the ram cost
         self.blocks = nn.ModuleList()
         for i in range(len(mid_planes) - 1):
             in_plane = mid_planes[i]
@@ -30,12 +32,15 @@ class Residual_Encoder(nn.Module):
                                                   leaky_alpha=leaky_alpha))
             self.blocks.append(Conv_Norm_ReLU(inp=in_plane,
                                               outp=out_plane,
-                                              leaky_alpha=0.02))
+                                              leaky_alpha=0.02,
+                                              stride=1))
         
         self.outconv = Conv_Norm_ReLU(inp=mid_planes[-1], 
                                       outp=outp,
                                       leaky_alpha=leaky_alpha)
     
+        # Optional: downsample and upsample to regular resolution
+
     def forward(self, x):
         x = self.inconv(x)
         for block in self.blocks:
@@ -84,7 +89,7 @@ class Encoder_Decoder_Net(nn.Module):
     
     def __init__(self, 
                  e_inp=3, 
-                 e_midps=[32, 64],
+                 e_midps=[128],
                  e_outp=64, 
                  d_outp=1, 
                  leaky_alpha=0.02):
@@ -93,10 +98,16 @@ class Encoder_Decoder_Net(nn.Module):
                                         mid_planes=e_midps,
                                         outp=e_outp,
                                         leaky_alpha=leaky_alpha)
+        
+        # self.encoder = get_resnet50_encoder()
+        # output: 512 x 4
+        
         # encoder's output channel = decoder's input channel
         self.decoder = UNet(n_channels=e_outp,
                             n_classes=d_outp,
                             bilinear=True)
     
     def forward(self, x):
-        return self.decoder(self.encoder(x))
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x

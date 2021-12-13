@@ -2,6 +2,7 @@ import argparse
 from numpy.core.fromnumeric import mean
 import torch
 import torch.optim as optim
+import torch.nn as nn
 from tqdm import tqdm
 from datetime import datetime
 import time
@@ -53,8 +54,8 @@ def check_loss_on_set(dataloader, model, device):
     rmse = 0
     with torch.no_grad():
         for x_val, y_val in dataloader:
-            x_val = x_val.to(device=device)
-            y_val = y_val.to(device=device)
+            # x_val = x_val.to(device=device)
+            # y_val = y_val.to(device=device)
             y_pred = model(x_val)
             
             _loss = compute_loss(pred=y_pred,
@@ -85,7 +86,7 @@ def train(train_dataloader,
           device):
     print_every = 50
     
-    model = model.to(device=device)
+    # model = model.to(device=device)
     best_rmse = float('inf')
     best_model = model
     
@@ -100,8 +101,8 @@ def train(train_dataloader,
             # turn to train mode
             model.train()
             
-            x_tr = x_tr.to(device=device)
-            y_tr = y_tr.to(device=device)
+            # x_tr = x_tr.to(device=device)
+            # y_tr = y_tr.to(device=device)
             y_pred = model(x_tr)
             
             loss = compute_loss(pred=y_pred,
@@ -161,7 +162,8 @@ def main():
     device = torch.device(device)
     
     print("main(): Getting model......")
-    model = Encoder_Decoder_Net().to(device)
+    model = Encoder_Decoder_Net()
+    model = nn.DataParallel(model)
     
     optimizer = optim.Adam(model.parameters(), 
                            lr=lr,
