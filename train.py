@@ -1,4 +1,5 @@
 import argparse
+from numpy.core.fromnumeric import mean
 import torch
 import torch.optim as optim
 from tqdm import tqdm
@@ -7,7 +8,9 @@ import time
 from utils import load_param, save_param
 from load_data import nyu2_dataloaders
 from loss import compute_loss
-from model.Res_Unet import Encoder_Decoder_Net
+from model.Res_Unet.Res_Unet import Encoder_Decoder_Net
+from sklearn.metrics import mean_squared_error
+import numpy as np
 
 description = "CS386 course project - Depth Estimation In Soccer Games"
 parser = argparse.ArgumentParser(description=description)
@@ -17,23 +20,22 @@ parser.add_argument('--lr', default=1e-4, type=float,
                     help='initial learning rate')
 parser.add_argument('--L2penalty', default=1e-4, type=float,
                     help='weight_decay, i.e. L2normPenalty')
+
 parser.add_argument('--alpha', default=0.5, type=float,
-                    help='loss_params alpha, used in logarithm')
+                    help='loss_params alpha, used in logarithm, \log(x + alpha)')
 parser.add_argument('--lmbd', default=1, type=float,
                     help='coefficient of loss_grad term')
 parser.add_argument('--mu', default=1, type=int,
                     help='coefficient of loss_normal term')
-<<<<<<< HEAD
 parser.add_argument('--gamma', default=1, type=int,
                     help='coefficient of loss_scale term')
+
 parser.add_argument('--batchsize', default=32, type=int,
-=======
-parser.add_argument('--batchsize', default=8, type=int,
->>>>>>> 1630fb701ef7cecd3de51fa29b99f56d7103fdea
                     help="batchsize of training")
 
 args = parser.parse_args()
 
+#! Remember the loss params
 loss_params = {
     '_alpha': args.alpha,
     '_lambda': args.lmbd,
@@ -41,9 +43,14 @@ loss_params = {
     '_gamma': args.gamma
 }
 
+def rmse(y_true, y_pred):
+    return np.sqrt(mean_squared_error(y_true, y_pred))
+
+
 def check_loss_on_set(dataloader, model, device):
     model.eval()
     loss = 0
+    rmse = 0
     with torch.no_grad():
         for x_val, y_val in dataloader:
             x_val = x_val.to(device=device)
@@ -55,12 +62,18 @@ def check_loss_on_set(dataloader, model, device):
                                  device=device,
                                  _alpha=loss_params['_alpha'], 
                                  _lambda=loss_params['_lambda'], 
-                                 _mu=loss_params['_mu'])
+                                 _mu=loss_params['_mu'],
+                                 _gamma=loss_params['_gamma'])
             loss += _loss
+            
+            _rmse = rmse(y_val, y_pred)
+            
+            rmse += _rmse
         loss /= len(dataloader)
-        print("Test on [val]: loss avg: %.4f" 
+        rmse /= len(dataloader)
+        print("Test on [val]: loss avg: %.4f, rmse avg : %.4f"
               % (
-                    loss    
+                    loss, rmse
                 )
               )
             
@@ -70,9 +83,11 @@ def train(train_dataloader,
           optimizer,
           epochs,
           device):
-    print_every = 5
+    print_every = 50
     
     model = model.to(device=device)
+    best_rmse = float('inf')
+    best_model = model
     
     start_time = time.time()
     
@@ -81,6 +96,7 @@ def train(train_dataloader,
     for epoch in range(epochs):
         # batched_image_size: (batch_size, C, H, W)
         for i, (x_tr, y_tr) in enumerate(tqdm(train_dataloader)):
+            torch.cuda.empty_cache()
             # turn to train mode
             model.train()
             
@@ -103,6 +119,16 @@ def train(train_dataloader,
             optimizer.step()
             
             end_time = time.time()
+            
+            epoch_rmse = rmse(y_tr, y_pred)
+            
+            if (epoch_rmse < best_rmse):
+                best_model = model
+                best_rmse = rmse
+                filelabel = str(rmse)
+                save_param(model=best_model,
+                           pth_path='./model_pth/{}.pth'.format(filelabel))
+            
             if i % print_every == 0:
                 # print the information of the epoch
                 print("[Epoch]: %d/%d [Iteration]: %d/%d, [loss]: %.4f, [Time Spent]: %.3f"
@@ -135,7 +161,7 @@ def main():
     device = torch.device(device)
     
     print("main(): Getting model......")
-    model = Encoder_Decoder_Net.to(device)
+    model = Encoder_Decoder_Net().to(device)
     
     optimizer = optim.Adam(model.parameters(), 
                            lr=lr,
@@ -143,7 +169,7 @@ def main():
     
     print("main(): Getting dataloaders......")
     train_set, val_set, test_set = nyu2_dataloaders(batchsize=batchsize,
-                                                    nyu2_path='./nyu2_train')
+                                                    nyu2_path='../datasets/nyu2_train')
     
     print("main(): start training......")
     # all epochs wrapped in train()

@@ -57,7 +57,6 @@ def compute_loss(pred, truth, device, **kwargs):
             loss_normal: 
     '''
     
-<<<<<<< HEAD
     _alpha = kwargs.get('_alpha', 0.5)  # Logarithm
     _lambda = kwargs.get('_lambda', 1)  # Loss_grad
     _mu = kwargs.get('_mu', 1)          # Loss_normal
@@ -69,14 +68,6 @@ def compute_loss(pred, truth, device, **kwargs):
     
     d_mean = d.mean()
     loss_scale = -1 * _gamma * d_mean * d_mean
-=======
-    _alpha = kwargs.get('_alpha', 0.5)
-    _lambda = kwargs.get('_lambda', 1)
-    _mu = kwargs.get('_mu', 1)
-    
-    # first term of loss
-    # loss_depth = torch.log(torch.abs(truth - pred) + _alpha).mean()
->>>>>>> 1630fb701ef7cecd3de51fa29b99f56d7103fdea
     
     grad_of = Sobel().to(device=device)
     pred_grad, truth_grad = grad_of(pred), grad_of(truth)
@@ -108,17 +99,4 @@ def compute_loss(pred, truth, device, **kwargs):
            loss_normal + \
            loss_scale
     
-    ## ---------- eigengrad: Scale-invariant loss with gradients ---------- ##
-    # d = torch.log(truth + _alpha) - torch.log(pred + _alpha)
-    # square_d = torch.square(d)
-    
-    # term_1 = square_d.mean()
-    # term_2 = -1 * (_lambda / 2) * (d.mean() ** 2)
-    
-    # d_dx = torch.log(truth_dx + _alpha) - torch.log(pred_dx + _alpha)
-    # d_dy = torch.log(truth_dy + _alpha) - torch.log(pred_dy + _alpha)
-    # term_3 = (torch.square(d_dx) + torch.square(d_dy)).mean()
-    
-    # loss = term_1 + term_2 + term_3
-    ## ---------- eigengrad: Scale-invariant loss with gradients ---------- ##
     return loss

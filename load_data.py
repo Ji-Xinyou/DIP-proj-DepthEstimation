@@ -31,6 +31,13 @@ class nyu2_dataset(Dataset):
         if self.transforms:
             x_tr = self.transforms(x_tr)
             y_tr = self.transforms(y_tr)
+        
+        normalize_by_imagenet = transforms.Compose([
+            transforms.Normalize([0.485, 0.456, 0.406],
+                                [0.229, 0.224, 0.225])
+            ])
+        
+        x_tr = normalize_by_imagenet(x_tr)
             
         return (x_tr, y_tr)
 
@@ -61,8 +68,6 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
         transforms.RandomRotation(5),
         transforms.RandomCrop([304, 228]),
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406],
-        #                      [0.229, 0.224, 0.225])
         ]
     )
     
@@ -72,8 +77,6 @@ def nyu2_dataloaders(batchsize=64, nyu2_path='./nyu2_train'):
         transforms.Scale(size=[320, 240]),
         transforms.RandomCrop([304, 228]),
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406],
-        #                      [0.229, 0.224, 0.225]),
         ]
     )
     

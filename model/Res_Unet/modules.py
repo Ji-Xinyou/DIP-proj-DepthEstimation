@@ -22,7 +22,10 @@ class Conv_Norm_ReLU(nn.Module):
                                  inplace=True)
     
     def forward(self, x):
-        return self.acti(self.norm(self.conv(x)))
+        x = self.conv(x)
+        x = self.norm(x)
+        x = self.acti(x)
+        return x
 
 class DoubleConv(nn.Module):
     '''
@@ -90,7 +93,7 @@ class DownSampling(nn.Module):
 
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.pool = nn.MaxPool2d(2),
+        self.pool = nn.MaxPool2d(2)
         self.conv = DoubleConv(in_channels, out_channels)
 
     def forward(self, x):

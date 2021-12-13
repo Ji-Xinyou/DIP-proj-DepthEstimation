@@ -16,19 +16,25 @@ class Residual_Encoder(nn.Module):
                  leaky_alpha=0.02):
         super().__init__()
         # inp -> mid_planes[0], mp[0] -> mp[1]， ..., mp[l - 2] -> mp[l - 1], mp[l - 1] -> outp
-        self.inconv = ResidualDoubleConv(inp=inp,
-                                         outp=mid_planes[0],
-                                         leaky_alpha=leaky_alpha)
+        self.inconv = Conv_Norm_ReLU(inp=inp,
+                                     outp=mid_planes[0],
+                                     leaky_alpha=0.02)
+        # dim = mp[0] now
+        # each block: residualdouble conv + conv to next dim
         self.blocks = nn.ModuleList()
         for i in range(len(mid_planes) - 1):
             in_plane = mid_planes[i]
             out_plane = mid_planes[i + 1]
-            self.blocks.append(ResidualConv(inp=in_plane,
-                                            outp=out_plane,
-                                            leaky_alpha=leaky_alpha))
-        self.outconv = ResidualDoubleConv(inp=mid_planes[-1], 
-                                          outp=outp,
-                                          leaky_alpha=leaky_alpha)
+            self.blocks.append(ResidualDoubleConv(inp=in_plane,
+                                                  outp=in_plane,
+                                                  leaky_alpha=leaky_alpha))
+            self.blocks.append(Conv_Norm_ReLU(inp=in_plane,
+                                              outp=out_plane,
+                                              leaky_alpha=0.02))
+        
+        self.outconv = Conv_Norm_ReLU(inp=mid_planes[-1], 
+                                      outp=outp,
+                                      leaky_alpha=leaky_alpha)
     
     def forward(self, x):
         x = self.inconv(x)
@@ -78,7 +84,7 @@ class Encoder_Decoder_Net(nn.Module):
     
     def __init__(self, 
                  e_inp=3, 
-                 e_midps=[64, 128, 256, 512],
+                 e_midps=[32, 64],
                  e_outp=64, 
                  d_outp=1, 
                  leaky_alpha=0.02):
